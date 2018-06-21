@@ -91,16 +91,17 @@ def plot(y, y_name=None, params=None, **kwargs):
     for y_left in np.arange(y_min, y_max, y_step):
         bins_means.append(y_left + y_step/2.)
         bins_ys.append(np.sum((y>=y_left) & (y<y_left+y_step)))
-    bins_ys = np.log(np.array(bins_ys) / len(y) / y_step)  # normalize
+    bins_ys = np.array(bins_ys) / len(y) / y_step  # normalize
 
     f, ax = plt.subplots(**kwargs)
     ax.scatter(bins_means, bins_ys, s=5., color="dodgerblue", label=label)
     for name, param in params.items():
         distr = getattr(stats, name)
-        ax.plot(y_space, np.log(distr.pdf(y_space, loc=param[0], scale=param[1])), label=name)
+        ax.plot(y_space, distr.pdf(y_space, loc=param[0], scale=param[1]), label=name)
 
     ax.legend()
-    ax.set_ylabel('log pdf')
+    ax.set_ylabel('pdf')
+    ax.set_yscale('log')
     if y_name is not None:
         ax.set_xlabel(y_name)
     ax.grid(True)
@@ -120,16 +121,17 @@ def plot(y, y_name=None, params=None, **kwargs):
     for y_left in np.arange(y_min, y_max, y_step):
         bins_means.append(y_left + y_step/2.)
         bins_ys.append(np.sum((y>=y_left) & (y<y_left+y_step)))
-    bins_ys = np.log(np.array(bins_ys) / len(y) / y_step)  # normalize
+    bins_ys = np.array(bins_ys) / len(y) / y_step  # normalize
 
     f, ax = plt.subplots(**kwargs)
     ax.scatter(bins_means, bins_ys, s=5., color="dodgerblue", label=label)
     for name, param in params.items():
         distr = getattr(stats, name)
-        ax.plot(y_space, np.log(distr.pdf(y_space, loc=param[0], scale=param[1])), label=name)
+        ax.plot(y_space, distr.pdf(y_space, loc=param[0], scale=param[1]), label=name)
 
     ax.legend()
-    ax.set_ylabel('log pdf')
+    ax.set_ylabel('pdf')
+    ax.set_yscale('log')
     if y_name is not None:
         ax.set_xlabel(y_name)
     ax.grid(True)
