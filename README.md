@@ -19,3 +19,8 @@ cauchy (0.007410253342752503, 0.6114054918233304)
 ![](examples/hist.png?raw=true)  
 ![](examples/pdf1.png?raw=true)  
 ![](examples/pdf2.png?raw=true)  
+
+## Requirements:
+- numpy
+- scipy
+- matplotlib
