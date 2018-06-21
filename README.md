@@ -9,3 +9,7 @@ import isgaussian
 y = np.random.randn(100000)
 isgaussian.plot(y)
 ```
+
+![](examples/hist.png?raw=true)  
+![](examples/pdf1.png?raw=true)  
+![](examples/pdf2.png?raw=true)  
