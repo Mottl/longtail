@@ -55,6 +55,8 @@ def plot(y, y_name=None, params=None, **kwargs):
         print("Estimating distributions parameters...")
         params = fit_distributions(y, verbose=True)
 
+    label = y_name or "data"
+
     # plot PDF
     y_min = np.percentile(y, 0.9)
     y_max = -np.percentile(-y, 0.9)
@@ -63,7 +65,7 @@ def plot(y, y_name=None, params=None, **kwargs):
     y_space = np.linspace(y_min, y_max, 1000)
 
     f, ax = plt.subplots(**kwargs)
-    ax.hist(y_, bins=num_bins, density=True, alpha=0.5, color="dodgerblue")
+    ax.hist(y_, bins=num_bins, density=True, alpha=0.5, color="dodgerblue", label=label)
     for name, param in params.items():
         distr = getattr(stats, name)
         ax.plot(y_space, distr.pdf(y_space, loc=param[0], scale=param[1]), label=name)
@@ -92,7 +94,7 @@ def plot(y, y_name=None, params=None, **kwargs):
     bins_ys = np.log(np.array(bins_ys) / len(y) / y_step)  # normalize
 
     f, ax = plt.subplots(**kwargs)
-    ax.scatter(bins_means, bins_ys, s=5., color="dodgerblue", label="data")
+    ax.scatter(bins_means, bins_ys, s=5., color="dodgerblue", label=label)
     for name, param in params.items():
         distr = getattr(stats, name)
         ax.plot(y_space, np.log(distr.pdf(y_space, loc=param[0], scale=param[1])), label=name)
@@ -121,7 +123,7 @@ def plot(y, y_name=None, params=None, **kwargs):
     bins_ys = np.log(np.array(bins_ys) / len(y) / y_step)  # normalize
 
     f, ax = plt.subplots(**kwargs)
-    ax.scatter(bins_means, bins_ys, s=5., color="dodgerblue", label="data")
+    ax.scatter(bins_means, bins_ys, s=5., color="dodgerblue", label=label)
     for name, param in params.items():
         distr = getattr(stats, name)
         ax.plot(y_space, np.log(distr.pdf(y_space, loc=param[0], scale=param[1])), label=name)
