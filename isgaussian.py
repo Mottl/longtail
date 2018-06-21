@@ -89,7 +89,7 @@ def plot(y, y_name=None, params=None, **kwargs):
     for y_left in np.arange(y_min, y_max, y_step):
         bins_means.append(y_left + y_step/2.)
         bins_ys.append(np.sum((y>=y_left) & (y<y_left+y_step)))
-    bins_ys = np.log(np.array(bins_ys) / len(y))  # normalize
+    bins_ys = np.log(np.array(bins_ys) / len(y) / y_step)  # normalize
 
     f, ax = plt.subplots(**kwargs)
     ax.scatter(bins_means, bins_ys, s=5., color="dodgerblue", label="data")
@@ -118,7 +118,7 @@ def plot(y, y_name=None, params=None, **kwargs):
     for y_left in np.arange(y_min, y_max, y_step):
         bins_means.append(y_left + y_step/2.)
         bins_ys.append(np.sum((y>=y_left) & (y<y_left+y_step)))
-    bins_ys = np.log(np.array(bins_ys) / len(y))  # normalize
+    bins_ys = np.log(np.array(bins_ys) / len(y) / y_step)  # normalize
 
     f, ax = plt.subplots(**kwargs)
     ax.scatter(bins_means, bins_ys, s=5., color="dodgerblue", label="data")
