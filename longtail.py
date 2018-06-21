@@ -108,8 +108,14 @@ def plot(y, y_name=None, params=None, **kwargs):
     plt.show()
 
     # plot LOG PDF
-    y_min = np.percentile(y, 0.002)
-    y_max = -np.percentile(-y, 0.002)
+    y_min_ = np.percentile(y, 0.002)
+    y_max_ = -np.percentile(-y, 0.002)
+
+    if (y_max - y_min)/(y_max_ - y_min_) > 0.8:
+        return  # no need for the third plot
+    else:
+        y_min, y_max = y_min_, y_max_
+
     y_ = y[(y>=y_min) & (y<=y_max)]
     num_bins = int(np.log(len(y_))*5)
     y_space = np.linspace(y_min, y_max, 1000)
