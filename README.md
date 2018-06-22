@@ -1,5 +1,5 @@
 # longtail
-Plot data probability distribution to visualise whether the data can be considered as Normal distributed
+**Longtail** plots different best-fit probability density functions (PDFs) for the given data.
 
 ## Usage:
 ```python
