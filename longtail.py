@@ -125,27 +125,40 @@ class GaussianScaler():
         if len(X.shape)>1:
             raise NotImplementedError("X must be an 1d-array")
 
-        X_sorted = np.sort(X)
-        x_min, x_max = X_sorted[0], X_sorted[-1]
-        x_total = len(X)
+        X_sorted = np.array(np.unique(X, return_counts=True)).T
+        X_sorted[:, 1] = np.cumsum(X_sorted[:, 1])
+        total = X_sorted[-1,1]
 
-        if bins == 'auto':
-            bins = int(np.log(x_total)*5)
+        GRANULARITY = 50
+        MIN_STEP = 5
+        MAX_STEP = 1000
 
-        x_step = (x_max - x_min) / bins
+        step = MIN_STEP
+        i = step
 
         self.transform_table = []
         self.transform_table.append((-np.inf, -np.inf, 0.))
-        for x in np.arange(x_min + x_step, x_max + x_step, x_step):
-            cdf_empiric = np.sum(X_sorted < x) / x_total
-            if cdf_empiric == 1:
-                break
 
-            # use probit function to get correspoding x from standard norm. distribution:
+        while True:
+            index = np.argmax(X_sorted[:,1] >= i)
+            row = X_sorted[index]
+
+            x = row[0]
+            cdf_empiric = row[1] / total
             x_norm = stats.norm.ppf(cdf_empiric)
             self.transform_table.append((x, x_norm, 0.))
-        self.transform_table.append((np.inf, np.inf, 0.))
 
+            if cdf_empiric < 0.5:
+                step = int(cdf_empiric * total / GRANULARITY)
+            else:
+                step = int((1 - cdf_empiric) * total / GRANULARITY)
+
+            step = max(min(step, MAX_STEP), MIN_STEP)
+            i = i + step
+            if i >= total:
+                break
+
+        self.transform_table.append((np.inf, np.inf, 0.))
         self.transform_table = np.array(self.transform_table)
 
         # compute x -> x_norm coefficients

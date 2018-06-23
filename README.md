@@ -35,7 +35,8 @@ cauchy (-0.0040960015181256, 0.6037980352309185)
 ![](examples/pdf_normal.png?raw=true)  
 
 ```python
-plt.plot(scaler.transform_table[:,0], scaler.transform_table[:,1], color="dodgerblue")
+plt.plot(scaler.transform_table[:,0], scaler.transform_table[:,1],
+    color="dodgerblue", label="Laplace to Gaussian transformation")
 plt.title("Transformation function")
 plt.xlabel("$x$")
 plt.ylabel("$\\hat{x}$", rotation=0)
