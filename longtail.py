@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Checks if distribution is Gaussian
+Transforms RV from the given empirical distribution to the standard normal distribution
 Author: Dmitry Mottl (https://github.com/Mottl)
 License: MIT
 """
@@ -47,6 +47,10 @@ def plot(y, y_name=None, params=None, **kwargs):
     y : array
 
     params: list of best-fit parameters returned by fit_distributions() function
+
+    Return value
+    ------------
+    params from fit_distributions() function
     """
 
     if y is not np.ndarray:
@@ -65,7 +69,7 @@ def plot(y, y_name=None, params=None, **kwargs):
     y_space = np.linspace(y_min, y_max, 1000)
 
     f, ax = plt.subplots(**kwargs)
-    ax.hist(y_, bins=num_bins, density=True, alpha=0.5, color="dodgerblue", label=label)
+    ax.hist(y_, bins=num_bins, density=True, alpha=0.33, color="dodgerblue", label=label)
     for name, param in params.items():
         distr = getattr(stats, name)
         ax.plot(y_space, distr.pdf(y_space, loc=param[0], scale=param[1]), label=name)
@@ -78,10 +82,9 @@ def plot(y, y_name=None, params=None, **kwargs):
     plt.show()
 
     # plot LOG PDF
-    y_min = np.percentile(y, 0.1)
-    y_max = -np.percentile(-y, 0.1)
-    y_ = y[(y>=y_min) & (y<=y_max)]
-    num_bins = int(np.log(len(y_))*5)
+    y_min, y_max = y.min(), y.max()
+
+    num_bins = int(np.log(len(y))*5)
     y_space = np.linspace(y_min, y_max, 1000)
 
     bins_means = []  # mean of bin interval
@@ -107,38 +110,115 @@ def plot(y, y_name=None, params=None, **kwargs):
     ax.grid(True)
     plt.show()
 
-    # plot LOG PDF
-    y_min_ = np.percentile(y, 0.002)
-    y_max_ = -np.percentile(-y, 0.002)
+    return params
 
-    if (y_max - y_min)/(y_max_ - y_min_) > 0.8:
-        return  # no need for the third plot
-    else:
-        y_min, y_max = y_min_, y_max_
 
-    y_ = y[(y>=y_min) & (y<=y_max)]
-    num_bins = int(np.log(len(y_))*5)
-    y_space = np.linspace(y_min, y_max, 1000)
+class GaussianScaler():
+    """Transform data to make it Gaussian distributed."""
 
-    bins_means = []  # mean of bin interval
-    bins_ys = []  # number of ys in interval
+    def __init__(self):
+        self.transform_table = None
 
-    y_step = (y_max - y_min) / num_bins
-    for y_left in np.arange(y_min, y_max, y_step):
-        bins_means.append(y_left + y_step/2.)
-        bins_ys.append(np.sum((y>=y_left) & (y<y_left+y_step)))
-    bins_ys = np.array(bins_ys) / len(y) / y_step  # normalize
+    def fit(self, X, y=None, bins='auto'):
+        """Compute empirical parameters for transforming the data to Gaussian distribution."""
 
-    f, ax = plt.subplots(**kwargs)
-    ax.scatter(bins_means, bins_ys, s=5., color="dodgerblue", label=label)
-    for name, param in params.items():
-        distr = getattr(stats, name)
-        ax.plot(y_space, distr.pdf(y_space, loc=param[0], scale=param[1]), label=name)
+        if len(X.shape)>1:
+            raise NotImplementedError("X must be an 1d-array")
 
-    ax.legend()
-    ax.set_ylabel('pdf')
-    ax.set_yscale('log')
-    if y_name is not None:
-        ax.set_xlabel(y_name)
-    ax.grid(True)
-    plt.show()
+        X_sorted = np.sort(X)
+        x_min, x_max = X_sorted[0], X_sorted[-1]
+        x_total = len(X)
+
+        if bins == 'auto':
+            bins = int(np.log(x_total)*5)
+
+        x_step = (x_max - x_min) / bins
+
+        self.transform_table = []
+        self.transform_table.append((-np.inf, -np.inf, 0.))
+        for x in np.arange(x_min + x_step, x_max + x_step, x_step):
+            cdf_empiric = np.sum(X_sorted < x) / x_total
+            # use probit function to get correspoding x from standard norm. distribution:
+            x_norm = stats.norm.ppf(cdf_empiric)
+            self.transform_table.append((x, x_norm, 0.))
+        self.transform_table.append((np.inf, np.inf, 0.))
+
+        self.transform_table = np.array(self.transform_table)
+
+        # compute x -> x_norm coefficients
+        dx = self.transform_table[2:-1, 0] - self.transform_table[1:-2, 0]
+        dx_norm = self.transform_table[2:-1, 1] - self.transform_table[1:-2, 1]
+        self.transform_table[2:-1, 2] = dx_norm / dx
+
+        """
+        # generic non-optimized code would look like this:
+        for i in range(2, len(self.transform_table) - 1):
+            dx = self.transform_table[i, 0] - self.transform_table[i-1, 0]
+            dx_norm = self.transform_table[i, 1] - self.transform_table[i-1, 1]
+            self.transform_table[i, 2] = dx_norm / dx
+        """
+
+        # fill boundary bins (plus/minus infinity) intervals:
+        self.transform_table[0,  2] = self.transform_table[2,  2]
+        self.transform_table[1,  2] = self.transform_table[2,  2]
+        self.transform_table[-1, 2] = self.transform_table[-2, 2]
+
+    def transform(self, X, y=None):
+        """Transform X to Gaussian distributed (standard normal)."""
+
+        if self.transform_table is None:
+            raise Exception(("This GaussianScaler instance is not fitted yet."
+                "Call 'fit' with appropriate arguments before using this method."))
+
+        def _transform(x):
+            # x(empirical) -> x(normaly distributed)
+            lefts  = self.transform_table[self.transform_table[:, 0] <  x]
+            rights = self.transform_table[self.transform_table[:, 0] >= x]
+
+            left_boundary = lefts[-1]
+            right_boundary = rights[0]
+
+            k = right_boundary[2]
+
+            if right_boundary[0] == np.inf:
+                x_norm = left_boundary[1] + k * (x - left_boundary[0])
+            else:
+                x_norm = right_boundary[1] + k * (x - right_boundary[0])
+
+            return x_norm
+
+        vtransform = np.vectorize(_transform)
+        return vtransform(X)
+
+    def fit_transform(self, X, y=None):
+        """ Fit to data, then transform it."""
+
+        self.fit(X)
+        return self.transform(X)
+
+    def inverse_transform(self, X):
+        """Transform back the data from Gaussian to the original empirical distribution."""
+
+        if self.transform_table is None:
+            raise Exception(("This GaussianScaler instance is not fitted yet."
+                "Call 'fit' with appropriate arguments before using this method."))
+
+        def _inverse_transform(x):
+            # x(normaly distributed) -> x(empirical)
+            lefts  = self.transform_table[self.transform_table[:, 1] <  x]
+            rights = self.transform_table[self.transform_table[:, 1] >= x]
+
+            left_boundary = lefts[-1]
+            right_boundary = rights[0]
+
+            k = right_boundary[2]
+
+            if right_boundary[1] == np.inf:
+                x_emp = left_boundary[0] + (x - left_boundary[1]) / k
+            else:
+                x_emp = right_boundary[0] + (x - right_boundary[1]) / k
+
+            return x_emp
+
+        vinverse_transform = np.vectorize(_inverse_transform)
+        return vinverse_transform(X)
