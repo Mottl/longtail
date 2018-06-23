@@ -22,7 +22,7 @@ cauchy (-0.0016636861308046977, 0.6439073171681272)
 ```python
 scaler = longtail.GaussianScaler()
 x_ = scaler.fit_transform(x)
-longtail.plot(y_)
+longtail.plot(x_)
 ```
 ```
 Estimating distributions parameters...
