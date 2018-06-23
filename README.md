@@ -6,7 +6,7 @@
 import numpy as np
 import longtail
 
-y = np.random.laplace(size=100000)
+x = np.random.laplace(size=100000)
 longtail.plot(y)
 ```
 ```
@@ -21,7 +21,7 @@ cauchy (-0.0016636861308046977, 0.6439073171681272)
 
 ```python
 scaler = longtail.GaussianScaler()
-y_ = scaler.fit_transform(y)
+x_ = scaler.fit_transform(x)
 longtail.plot(y_)
 ```
 ```
