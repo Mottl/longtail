@@ -128,6 +128,7 @@ class GaussianScaler():
         X_sorted = np.array(np.unique(X, return_counts=True)).T
         X_sorted[:, 1] = np.cumsum(X_sorted[:, 1])
         total = X_sorted[-1,1]
+        # X_sorted[:, 0] is x, X_sorted[:, 1] is the number of occurences <= x
 
         GRANULARITY = 50
         MIN_STEP = 5
@@ -135,25 +136,30 @@ class GaussianScaler():
 
         step = MIN_STEP
         i = step
+        prev_x = -np.inf
 
         self.transform_table = []
         self.transform_table.append((-np.inf, -np.inf, 0.))
 
         while True:
             index = np.argmax(X_sorted[:,1] >= i)
+
             row = X_sorted[index]
 
             x = row[0]
-            cdf_empiric = row[1] / total
-            x_norm = stats.norm.ppf(cdf_empiric)
-            self.transform_table.append((x, x_norm, 0.))
+            if x != prev_x:
+                cdf_empiric = row[1] / total
+                x_norm = stats.norm.ppf(cdf_empiric)
+                self.transform_table.append((x, x_norm, 0.))
 
-            if cdf_empiric < 0.5:
-                step = int(cdf_empiric * total / GRANULARITY)
-            else:
-                step = int((1 - cdf_empiric) * total / GRANULARITY)
+                if cdf_empiric < 0.5:
+                    step = int(cdf_empiric * total / GRANULARITY)
+                else:
+                    step = int((1 - cdf_empiric) * total / GRANULARITY)
 
-            step = max(min(step, MAX_STEP), MIN_STEP)
+                step = max(min(step, MAX_STEP), MIN_STEP)
+                prev_x = x
+
             i = i + step
             if i >= total:
                 break
