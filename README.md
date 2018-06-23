@@ -1,5 +1,5 @@
 # longtail
-**Longtaol** Transforms RV from the given empirical distribution to the standard normal distribution.
+**Longtaol** transforms RV from the given empirical distribution to the standard normal distribution.
 
 ## Usage:
 ```python
