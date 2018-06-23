@@ -35,10 +35,11 @@ cauchy (-0.0040960015181256, 0.6037980352309185)
 ![](examples/pdf_normal.png?raw=true)  
 
 ```python
-plt.plot(scaler.transform_table[:,0], scaler.transform_table[:,1], lw=1.5)
+plt.plot(scaler.transform_table[:,0], scaler.transform_table[:,1], color="dodgerblue")
+plt.title("Transformation function")
 plt.xlabel("$x$")
-plt.ylabel("$\\hat{x}$")
-plt.axis('equal')
+plt.ylabel("$\\hat{x}$", rotation=0)
+plt.axis("equal")
 plt.grid(True)
 plt.show()
 ```
