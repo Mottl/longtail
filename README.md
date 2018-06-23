@@ -34,6 +34,16 @@ cauchy (-0.0040960015181256, 0.6037980352309185)
 ![](examples/hist_normal.png?raw=true)  
 ![](examples/pdf_normal.png?raw=true)  
 
+```python
+plt.plot(scaler.transform_table[:,0], scaler.transform_table[:,1], lw=1.5)
+plt.xlabel("$x$")
+plt.ylabel("$\\hat{x}$")
+plt.axis('equal')
+plt.grid(True)
+plt.show()
+```
+
+![](examples/transform_function.png?raw=true)  
 
 ## Requirements:
 - numpy

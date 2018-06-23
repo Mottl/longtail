@@ -138,6 +138,9 @@ class GaussianScaler():
         self.transform_table.append((-np.inf, -np.inf, 0.))
         for x in np.arange(x_min + x_step, x_max + x_step, x_step):
             cdf_empiric = np.sum(X_sorted < x) / x_total
+            if cdf_empiric == 1:
+                break
+
             # use probit function to get correspoding x from standard norm. distribution:
             x_norm = stats.norm.ppf(cdf_empiric)
             self.transform_table.append((x, x_norm, 0.))
