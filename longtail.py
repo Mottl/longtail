@@ -5,9 +5,15 @@ Author: Dmitry Mottl (https://github.com/Mottl)
 License: MIT
 """
 
+import sys
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
+
+try:
+    import pandas as pd
+except:
+    pass
 
 def fit_distributions(y, distributions=None, verbose=False):
     """
@@ -118,73 +124,96 @@ class GaussianScaler():
 
     def __init__(self):
         self.transform_table = None
+        self.features_names = None
+        self.__num_vars = None
 
     def fit(self, X, y=None):
         """Compute empirical parameters for transforming the data to Gaussian distribution."""
 
-        if len(X.shape)>1:
-            raise NotImplementedError("X must be an 1d-array")
+        if len(X.shape)>2:
+            raise NotImplementedError("X must be an 1d-array or a 2d-matrix of observations x features")
 
-        X_sorted = np.array(np.unique(X, return_counts=True)).T
-        X_sorted[:, 1] = np.cumsum(X_sorted[:, 1])
-        total = X_sorted[-1,1]
-        # X_sorted[:, 0] is x, X_sorted[:, 1] is the number of occurences <= x
+        # convert from pd.DataFrame to np.ndarrray:
+        if "pandas.core.frame" in sys.modules.keys() and type(X) == pd.core.frame.DataFrame:
+            self.features_names = X.columns.values
+            X = X.values
 
-        STEP_MULT = 0.1  # step multiplier
-        MIN_STEP = 5
+        if len(X.shape) == 2 and X.shape[1] == 1:
+            X = X.ravel()
 
-        step = MIN_STEP
-        i = step
-        prev_x = -np.inf
+        if X.dtype != float:
+            raise Exception("X.dtype is {}, but should be float".format(X.dtype))
 
+        self.__num_vars = len(X.shape)
         self.transform_table = []
-        self.transform_table.append((-np.inf, -np.inf, 0.))
 
-        while True:
-            index = np.argmax(X_sorted[:,1] >= i)
-            row = X_sorted[index]
-            x = row[0]
-            if x != prev_x:
-                cdf_empiric = row[1] / total
-                x_norm = stats.norm.ppf(cdf_empiric)
+        for j in range(self.__num_vars):
+            if self.__num_vars > 1:
+                X_sorted = np.array(np.unique(X[:, j], return_counts=True)).T
+            else:
+                X_sorted = np.array(np.unique(X, return_counts=True)).T
+            X_sorted[:, 1] = np.cumsum(X_sorted[:, 1])
+            total = X_sorted[-1,1]
+            # X_sorted[:, 0] is x, X_sorted[:, 1] is the number of occurences <= x
 
-                if x_norm == np.inf:  # too large - stop
+            STEP_MULT = 0.1  # step multiplier
+            MIN_STEP = 5
+
+            step = MIN_STEP
+            i = step
+            prev_x = -np.inf
+
+            transform_table = []
+            transform_table.append((-np.inf, -np.inf, 0.))
+
+            while True:
+                index = np.argmax(X_sorted[:,1] >= i)
+                row = X_sorted[index]
+                x = row[0]
+                if x != prev_x:
+                    cdf_empiric = row[1] / total
+                    x_norm = stats.norm.ppf(cdf_empiric)
+
+                    if x_norm == np.inf:  # too large - stop
+                        break
+                    if x_norm != -np.inf:
+                        transform_table.append((x, x_norm, 0.))
+
+                    if cdf_empiric < 0.5:
+                        step = int(row[1] * STEP_MULT)
+                    else:
+                        step = int((total - row[1]) * STEP_MULT)
+
+                    step = max(step, MIN_STEP)
+                    prev_x = x
+
+                i = i + step
+                if i >= total:
                     break
-                if x_norm != -np.inf:
-                    self.transform_table.append((x, x_norm, 0.))
 
-                if cdf_empiric < 0.5:
-                    step = int(row[1] * STEP_MULT)
-                else:
-                    step = int((total - row[1]) * STEP_MULT)
+            transform_table.append((np.inf, np.inf, 0.))
+            transform_table = np.array(transform_table)
 
-                step = max(step, MIN_STEP)
-                prev_x = x
+            # compute x -> x_norm coefficients
+            dx = transform_table[2:-1, 0] - transform_table[1:-2, 0]
+            dx_norm = transform_table[2:-1, 1] - transform_table[1:-2, 1]
+            transform_table[2:-1, 2] = dx_norm / dx
 
-            i = i + step
-            if i >= total:
-                break
+            """
+            # generic non-optimized code would look like this:
+            for i in range(2, len(transform_table) - 1):
+                dx = transform_table[i, 0] - transform_table[i-1, 0]
+                dx_norm = transform_table[i, 1] - transform_table[i-1, 1]
+                transform_table[i, 2] = dx_norm / dx
+            """
 
-        self.transform_table.append((np.inf, np.inf, 0.))
-        self.transform_table = np.array(self.transform_table)
+            # fill boundary bins (plus/minus infinity) intervals:
+            transform_table[0,  2] = transform_table[2,  2]
+            transform_table[1,  2] = transform_table[2,  2]
+            transform_table[-1, 2] = transform_table[-2, 2]
 
-        # compute x -> x_norm coefficients
-        dx = self.transform_table[2:-1, 0] - self.transform_table[1:-2, 0]
-        dx_norm = self.transform_table[2:-1, 1] - self.transform_table[1:-2, 1]
-        self.transform_table[2:-1, 2] = dx_norm / dx
-
-        """
-        # generic non-optimized code would look like this:
-        for i in range(2, len(self.transform_table) - 1):
-            dx = self.transform_table[i, 0] - self.transform_table[i-1, 0]
-            dx_norm = self.transform_table[i, 1] - self.transform_table[i-1, 1]
-            self.transform_table[i, 2] = dx_norm / dx
-        """
-
-        # fill boundary bins (plus/minus infinity) intervals:
-        self.transform_table[0,  2] = self.transform_table[2,  2]
-        self.transform_table[1,  2] = self.transform_table[2,  2]
-        self.transform_table[-1, 2] = self.transform_table[-2, 2]
+            # add current transform table for the feature to self.transform_table
+            self.transform_table.append(transform_table)
 
     def transform(self, X, y=None):
         """Transform X to Gaussian distributed (standard normal)."""
@@ -193,10 +222,34 @@ class GaussianScaler():
             raise Exception(("This GaussianScaler instance is not fitted yet."
                 "Call 'fit' with appropriate arguments before using this method."))
 
-        def _transform(x):
+        if len(X.shape)>2:
+            raise NotImplementedError("X must be an 1d-array or a 2d-matrix of observations x features")
+
+        # convert from pd.DataFrame to np.ndarrray:
+        if "pandas.core.frame" in sys.modules.keys() and type(X) == pd.core.frame.DataFrame:
+            features_names = X.columns.values
+            if (features_names != self.features_names).any():
+                raise Exception("Feature names mismatch.\nFeatures for fit():{}\nFeatures for transform:{}".format(
+                    self.features_names, features_names))
+            save_index = X.index.copy()
+            X = X.values.copy()
+
+        if len(X.shape) == 2 and X.shape[1] == 1:
+            X = X.ravel()
+
+        if X.dtype != float:
+            raise Exception("X.dtype is {}, but should be float".format(X.dtype))
+
+        num_vars = len(X.shape)
+        if self.__num_vars != num_vars:
+            raise Exception("Number of features mismatch for fit() and transform(): {} vs {}".format(
+                self.__num_vars, num_vars))
+
+        def _transform(x, j):
             # x(empirical) -> x(normaly distributed)
-            lefts  = self.transform_table[self.transform_table[:, 0] <  x]
-            rights = self.transform_table[self.transform_table[:, 0] >= x]
+            transform_table = self.transform_table[j]
+            lefts  = transform_table[transform_table[:, 0] <  x]
+            rights = transform_table[transform_table[:, 0] >= x]
 
             left_boundary = lefts[-1]
             right_boundary = rights[0]
@@ -211,7 +264,16 @@ class GaussianScaler():
             return x_norm
 
         vtransform = np.vectorize(_transform)
-        return vtransform(X)
+
+        # transform all features:
+        for j in range(self.__num_vars):
+            X[:, j] = vtransform(X[:, j], j)
+
+        # reconstruct X as a DataFrame:
+        if self.features_names is not None:
+            X = pd.DataFrame(X, columns=self.features_names, index=save_index)
+
+        return X
 
     def fit_transform(self, X, y=None):
         """ Fit to data, then transform it."""
@@ -226,10 +288,34 @@ class GaussianScaler():
             raise Exception(("This GaussianScaler instance is not fitted yet."
                 "Call 'fit' with appropriate arguments before using this method."))
 
-        def _inverse_transform(x):
+        if len(X.shape)>2:
+            raise NotImplementedError("X must be an 1d-array or a 2d-matrix of observations x features")
+
+        # convert from pd.DataFrame to np.ndarrray:
+        if "pandas.core.frame" in sys.modules.keys() and type(X) == pd.core.frame.DataFrame:
+            features_names = X.columns.values
+            if (features_names != self.features_names).any():
+                raise Exception("Feature names mismatch.\nFeatures for fit():{}\nFeatures for transform:{}".format(
+                    self.features_names, features_names))
+            save_index = X.index.copy()
+            X = X.values.copy()
+
+        if len(X.shape) == 2 and X.shape[1] == 1:
+            X = X.ravel()
+
+        if X.dtype != float:
+            raise Exception("X.dtype is {}, but should be float".format(X.dtype))
+
+        num_vars = len(X.shape)
+        if self.__num_vars != num_vars:
+            raise Exception("Number of features mismatch for fit() and transform(): {} vs {}".format(
+                self.__num_vars, num_vars))
+
+        def _inverse_transform(x, j):
             # x(normaly distributed) -> x(empirical)
-            lefts  = self.transform_table[self.transform_table[:, 1] <  x]
-            rights = self.transform_table[self.transform_table[:, 1] >= x]
+            transform_table = self.transform_table[j]
+            lefts  = transform_table[transform_table[:, 1] <  x]
+            rights = transform_table[transform_table[:, 1] >= x]
 
             left_boundary = lefts[-1]
             right_boundary = rights[0]
@@ -244,4 +330,13 @@ class GaussianScaler():
             return x_emp
 
         vinverse_transform = np.vectorize(_inverse_transform)
-        return vinverse_transform(X)
+
+        # transform all features:
+        for j in range(self.__num_vars):
+            X[:, j] = vinverse_transform(X[:, j], j)
+
+        # reconstruct X as a DataFrame:
+        if self.features_names is not None:
+            X = pd.DataFrame(X, columns=self.features_names, index=save_index)
+
+        return X
