@@ -15,13 +15,13 @@ try:
 except:
     pass
 
-def fit_distributions(y, distributions=None, verbose=False):
+def fit_distributions(X, distributions=None, verbose=False):
     """
-    fit distributions to data `y`
+    fit distributions to data `X`
 
     Parameters
     ----------
-    y : array
+    X : 1d-array
 
     distributions : array of strings (['norm', 'laplace', etc..])
     defaults distributions are: ['norm', 'laplace', 'cauchy']
@@ -37,20 +37,20 @@ def fit_distributions(y, distributions=None, verbose=False):
     params = {}
     for name in distributions:
         distr = getattr(stats, name)
-        params[name] = distr.fit(y)
+        params[name] = distr.fit(X)
         if verbose:
             print(name, params[name])
     return params
 
 
-def plot(y, y_name=None, params=None, **kwargs):
+def plot(X, X_name=None, params=None, **kwargs):
     """
     plot probability distribution function for `y`
     and overlay distributions calculated with `params`
 
     Parameters
     ----------
-    y : array
+    x : array
 
     params: list of best-fit parameters returned by fit_distributions() function
 
@@ -59,60 +59,60 @@ def plot(y, y_name=None, params=None, **kwargs):
     params from fit_distributions() function
     """
 
-    if y is not np.ndarray:
-        y = np.array(y)
+    if X is not np.ndarray:
+        X = np.array(X)
     if params is None:
         print("Estimating distributions parameters...")
-        params = fit_distributions(y, verbose=True)
+        params = fit_distributions(X, verbose=True)
 
-    label = y_name or "data"
+    label = X_name or "data"
 
     # plot PDF
-    y_min = np.percentile(y, 0.9)
-    y_max = -np.percentile(-y, 0.9)
-    y_ = y[(y>=y_min) & (y<=y_max)]
-    num_bins = int(np.log(len(y_))*5)
-    y_space = np.linspace(y_min, y_max, 1000)
+    x_min = np.percentile(X, 0.9)
+    x_max = -np.percentile(-X, 0.9)
+    X_ = X[(X>=x_min) & (X<=x_max)]
+    num_bins = int(np.log(len(X_))*5)
+    x_space = np.linspace(x_min, x_max, 1000)
 
     f, ax = plt.subplots(**kwargs)
-    ax.hist(y_, bins=num_bins, density=True, alpha=0.33, color="dodgerblue", label=label)
+    ax.hist(X_, bins=num_bins, density=True, alpha=0.33, color="dodgerblue", label=label)
     for name, param in params.items():
         distr = getattr(stats, name)
-        ax.plot(y_space, distr.pdf(y_space, loc=param[0], scale=param[1]), label=name)
+        ax.plot(x_space, distr.pdf(x_space, loc=param[0], scale=param[1]), label=name)
 
     ax.legend()
     ax.set_ylabel('pdf')
-    if y_name is not None:
-        ax.set_xlabel(y_name)
+    if X_name is not None:
+        ax.set_xlabel(X_name)
     ax.grid(True)
     plt.show()
 
     # plot LOG PDF
-    y_min, y_max = y.min(), y.max()
+    x_min, x_max = X.min(), X.max()
 
-    num_bins = int(np.log(len(y))*5)
-    y_space = np.linspace(y_min, y_max, 1000)
+    num_bins = int(np.log(len(X))*5)
+    x_space = np.linspace(x_min, x_max, 1000)
 
     bins_means = []  # mean of bin interval
-    bins_ys = []  # number of ys in interval
+    bins_xs = []  # number of ys in interval
 
-    y_step = (y_max - y_min) / num_bins
-    for y_left in np.arange(y_min, y_max, y_step):
-        bins_means.append(y_left + y_step/2.)
-        bins_ys.append(np.sum((y>=y_left) & (y<y_left+y_step)))
-    bins_ys = np.array(bins_ys) / len(y) / y_step  # normalize
+    x_step = (x_max - x_min) / num_bins
+    for x_left in np.arange(x_min, x_max, x_step):
+        bins_means.append(x_left + x_step/2.)
+        bins_xs.append(np.sum((X>=x_left) & (X<x_left+x_step)))
+    bins_xs = np.array(bins_xs) / len(X) / x_step  # normalize
 
     f, ax = plt.subplots(**kwargs)
-    ax.scatter(bins_means, bins_ys, s=5., color="dodgerblue", label=label)
+    ax.scatter(bins_means, bins_xs, s=5., color="dodgerblue", label=label)
     for name, param in params.items():
         distr = getattr(stats, name)
-        ax.plot(y_space, distr.pdf(y_space, loc=param[0], scale=param[1]), label=name)
+        ax.plot(x_space, distr.pdf(x_space, loc=param[0], scale=param[1]), label=name)
 
     ax.legend()
     ax.set_ylabel('pdf')
     ax.set_yscale('log')
-    if y_name is not None:
-        ax.set_xlabel(y_name)
+    if X_name is not None:
+        ax.set_xlabel(X_name)
     ax.grid(True)
     plt.show()
 
