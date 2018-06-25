@@ -140,17 +140,26 @@ class GaussianScaler():
             raise NotImplementedError("X must be an 1d-array or a 2d-matrix of observations x features")
 
         # convert from pd.DataFrame to np.ndarrray:
-        if "pandas.core.frame" in sys.modules.keys() and type(X) == pd.core.frame.DataFrame:
-            self.features_names = X.columns.values
+        if "pandas.core.frame" in sys.modules.keys() and \
+            type(X) in (pd.core.series.Series, pd.core.frame.DataFrame):
+            if type(X) == pd.core.frame.DataFrame:
+                self.features_names = X.columns.values
+            else:
+                self.features_names = np.array([X.name])
             X = X.values
-
-        if len(X.shape) == 2 and X.shape[1] == 1:
-            X = X.ravel()
 
         if X.dtype != float:
             raise Exception("X.dtype is {}, but should be float".format(X.dtype))
 
-        self.__num_vars = len(X.shape)
+        if len(X.shape) == 2:
+            if X.shape[1] == 1:
+                X = X.ravel()
+                self.__num_vars = 1
+            else:
+                self.__num_vars = X.shape[1]
+        else:
+            self.__num_vars = 1
+
         self.transform_table = []
 
         for j in range(self.__num_vars):
@@ -238,21 +247,31 @@ class GaussianScaler():
             raise NotImplementedError("X must be an 1d-array or a 2d-matrix of observations x features")
 
         # convert from pd.DataFrame to np.ndarrray:
-        if "pandas.core.frame" in sys.modules.keys() and type(X) == pd.core.frame.DataFrame:
-            features_names = X.columns.values
+        if "pandas.core.frame" in sys.modules.keys() and \
+            type(X) in (pd.core.series.Series, pd.core.frame.DataFrame):
+            if type(X) == pd.core.frame.DataFrame:
+                features_names = X.columns.values
+            else:
+                features_names = np.array([X.name])
+
             if (features_names != self.features_names).any():
                 raise Exception("Feature names mismatch.\nFeatures for fit():{}\nFeatures for transform:{}".format(
                     self.features_names, features_names))
             save_index = X.index.copy()
             X = X.values.copy()
 
-        if len(X.shape) == 2 and X.shape[1] == 1:
-            X = X.ravel()
-
         if X.dtype != float:
             raise Exception("X.dtype is {}, but should be float".format(X.dtype))
 
-        num_vars = len(X.shape)
+        if len(X.shape) == 2:
+            if X.shape[1] == 1:
+                X = X.ravel()
+                num_vars = 1
+            else:
+                num_vars = X.shape[1]
+        else:
+            num_vars = 1
+
         if self.__num_vars != num_vars:
             raise Exception("Number of features mismatch for fit() and transform(): {} vs {}".format(
                 self.__num_vars, num_vars))
@@ -277,13 +296,20 @@ class GaussianScaler():
 
         vtransform = np.vectorize(_transform)
 
-        # transform all features:
-        for j in range(self.__num_vars):
-            X[:, j] = vtransform(X[:, j], j)
+        if num_vars > 1:
+            # transform all features:
+            for j in range(self.__num_vars):
+                print("processing %i"%j)
+                X[:, j] = vtransform(X[:, j], j)
+        else:
+            X = vtransform(X, 0)
 
-        # reconstruct X as a DataFrame:
+        # reconstruct X as a Series or a DataFrame:
         if self.features_names is not None:
-            X = pd.DataFrame(X, columns=self.features_names, index=save_index)
+            if num_vars > 1:
+                X = pd.DataFrame(X, columns=self.features_names, index=save_index)
+            else:
+                X = pd.Series(X, name=self.features_names[0], index=save_index)
 
         return X
 
@@ -316,21 +342,31 @@ class GaussianScaler():
             raise NotImplementedError("X must be an 1d-array or a 2d-matrix of observations x features")
 
         # convert from pd.DataFrame to np.ndarrray:
-        if "pandas.core.frame" in sys.modules.keys() and type(X) == pd.core.frame.DataFrame:
-            features_names = X.columns.values
+        if "pandas.core.frame" in sys.modules.keys() and \
+            type(X) in (pd.core.series.Series, pd.core.frame.DataFrame):
+            if type(X) == pd.core.frame.DataFrame:
+                features_names = X.columns.values
+            else:
+                features_names = np.array([X.name])
+
             if (features_names != self.features_names).any():
                 raise Exception("Feature names mismatch.\nFeatures for fit():{}\nFeatures for transform:{}".format(
                     self.features_names, features_names))
             save_index = X.index.copy()
             X = X.values.copy()
 
-        if len(X.shape) == 2 and X.shape[1] == 1:
-            X = X.ravel()
-
         if X.dtype != float:
             raise Exception("X.dtype is {}, but should be float".format(X.dtype))
 
-        num_vars = len(X.shape)
+        if len(X.shape) == 2:
+            if X.shape[1] == 1:
+                X = X.ravel()
+                num_vars = 1
+            else:
+                num_vars = X.shape[1]
+        else:
+            num_vars = 1
+
         if self.__num_vars != num_vars:
             raise Exception("Number of features mismatch for fit() and transform(): {} vs {}".format(
                 self.__num_vars, num_vars))
@@ -355,12 +391,18 @@ class GaussianScaler():
 
         vinverse_transform = np.vectorize(_inverse_transform)
 
-        # transform all features:
-        for j in range(self.__num_vars):
-            X[:, j] = vinverse_transform(X[:, j], j)
+        if num_vars > 1:
+            # transform all features:
+            for j in range(self.__num_vars):
+                X[:, j] = vinverse_transform(X[:, j], j)
+        else:
+            X = vinverse_transform(X, 0)
 
-        # reconstruct X as a DataFrame:
+        # reconstruct X as a Series or a DataFrame:
         if self.features_names is not None:
-            X = pd.DataFrame(X, columns=self.features_names, index=save_index)
+            if num_vars > 1:
+                X = pd.DataFrame(X, columns=self.features_names, index=save_index)
+            else:
+                X = pd.Series(X, name=self.features_names[0], index=save_index)
 
         return X
