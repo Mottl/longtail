@@ -119,7 +119,7 @@ class GaussianScaler():
     def __init__(self):
         self.transform_table = None
 
-    def fit(self, X, y=None, bins='auto'):
+    def fit(self, X, y=None):
         """Compute empirical parameters for transforming the data to Gaussian distribution."""
 
         if len(X.shape)>1:
@@ -130,9 +130,8 @@ class GaussianScaler():
         total = X_sorted[-1,1]
         # X_sorted[:, 0] is x, X_sorted[:, 1] is the number of occurences <= x
 
-        GRANULARITY = 50
+        STEP_MULT = 0.1  # step multiplier
         MIN_STEP = 5
-        MAX_STEP = 1000
 
         step = MIN_STEP
         i = step
@@ -143,21 +142,23 @@ class GaussianScaler():
 
         while True:
             index = np.argmax(X_sorted[:,1] >= i)
-
             row = X_sorted[index]
-
             x = row[0]
             if x != prev_x:
                 cdf_empiric = row[1] / total
                 x_norm = stats.norm.ppf(cdf_empiric)
-                self.transform_table.append((x, x_norm, 0.))
+
+                if x_norm == np.inf:  # too large - stop
+                    break
+                if x_norm != -np.inf:
+                    self.transform_table.append((x, x_norm, 0.))
 
                 if cdf_empiric < 0.5:
-                    step = int(cdf_empiric * total / GRANULARITY)
+                    step = int(row[1] * STEP_MULT)
                 else:
-                    step = int((1 - cdf_empiric) * total / GRANULARITY)
+                    step = int((total - row[1]) * STEP_MULT)
 
-                step = max(min(step, MAX_STEP), MIN_STEP)
+                step = max(step, MIN_STEP)
                 prev_x = x
 
             i = i + step
