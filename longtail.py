@@ -128,7 +128,13 @@ class GaussianScaler():
         self.__num_vars = None
 
     def fit(self, X, y=None):
-        """Compute empirical parameters for transforming the data to Gaussian distribution."""
+        """Compute empirical parameters for transforming the data to Gaussian distribution.
+
+        Parameters:
+        -----------
+        X : array-like (1 or 2 dim. np.ndarray, pandas.Series or pandas.DataFrame)
+        features to fit
+        """
 
         if len(X.shape)>2:
             raise NotImplementedError("X must be an 1d-array or a 2d-matrix of observations x features")
@@ -216,7 +222,13 @@ class GaussianScaler():
             self.transform_table.append(transform_table)
 
     def transform(self, X, y=None):
-        """Transform X to Gaussian distributed (standard normal)."""
+        """Transform X to Gaussian distributed (standard normal).
+
+        Parameters
+        ----------
+        X : array-like (1 or 2 dim. np.ndarray, pandas.Series or pandas.DataFrame)
+        features to transform
+        """
 
         if self.transform_table is None:
             raise Exception(("This GaussianScaler instance is not fitted yet."
@@ -276,13 +288,25 @@ class GaussianScaler():
         return X
 
     def fit_transform(self, X, y=None):
-        """ Fit to data, then transform it."""
+        """ Fit to data, then transform it.
+
+        Parameters
+        ----------
+        X : array-like (1 or 2 dim. np.ndarray, pandas.Series or pandas.DataFrame)
+        features to transform
+        """
 
         self.fit(X)
         return self.transform(X)
 
     def inverse_transform(self, X):
-        """Transform back the data from Gaussian to the original empirical distribution."""
+        """Transform back the data from Gaussian to the original empirical distribution.
+
+        Parameters
+        ----------
+        X : array-like (1 or 2 dim. np.ndarray, pandas.Series or pandas.DataFrame)
+        features to inverse transform
+        """
 
         if self.transform_table is None:
             raise Exception(("This GaussianScaler instance is not fitted yet."
