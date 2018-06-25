@@ -7,7 +7,7 @@ import numpy as np
 import longtail
 
 x = np.random.laplace(size=100000)
-longtail.plot(y)
+longtail.plot(x)
 ```
 ```
 Estimating distributions parameters...
