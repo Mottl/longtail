@@ -148,7 +148,7 @@ class GaussianScaler():
                 self.features_names = np.array([X.name])
             X = X.values
 
-        if X.dtype != float:
+        if X.dtype not in (float, np.float32, np.float64):
             raise Exception("X.dtype is {}, but should be float".format(X.dtype))
 
         if len(X.shape) == 2:
@@ -260,7 +260,7 @@ class GaussianScaler():
             save_index = X.index.copy()
             X = X.values.copy()
 
-        if X.dtype != float:
+        if X.dtype not in (float, np.float32, np.float64):
             raise Exception("X.dtype is {}, but should be float".format(X.dtype))
 
         if len(X.shape) == 2:
@@ -299,7 +299,6 @@ class GaussianScaler():
         if num_vars > 1:
             # transform all features:
             for j in range(self.__num_vars):
-                print("processing %i"%j)
                 X[:, j] = vtransform(X[:, j], j)
         else:
             X = vtransform(X, 0)
@@ -355,7 +354,7 @@ class GaussianScaler():
             save_index = X.index.copy()
             X = X.values.copy()
 
-        if X.dtype != float:
+        if X.dtype not in (float, np.float32, np.float64):
             raise Exception("X.dtype is {}, but should be float".format(X.dtype))
 
         if len(X.shape) == 2:
