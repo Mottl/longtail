@@ -1,13 +1,13 @@
 # longtail
 **Longtail** transforms RV from the given empirical distribution to the standard normal distribution.
 
-## Usage:
+## Usage
 ```python
 import numpy as np
 import longtail
 
 x = np.random.laplace(size=100000)
-longtail.plot(y)
+longtail.plot(x)
 ```
 ```
 Estimating distributions parameters...
@@ -47,7 +47,8 @@ plt.show()
 
 ![](examples/transform_function.png?raw=true)  
 
-## Requirements:
+## Requirements
+- Python 3
 - numpy
 - scipy
 - matplotlib
