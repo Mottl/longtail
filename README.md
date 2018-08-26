@@ -1,7 +1,9 @@
 # longtail
 **Longtail** transforms RV from the given empirical distribution to the standard normal distribution.
 
+![Python 3x](https://img.shields.io/badge/python-2.7-blue.svg)
 ![Python 3x](https://img.shields.io/badge/python-3.x-blue.svg)
+[![Build Status](https://travis-ci.org/Mottl/longtail.svg?branch=master)](https://travis-ci.org/Mottl/longtail)
 
 ## Usage
 ```python
