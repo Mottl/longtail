@@ -7,7 +7,7 @@
 
 ## Installation
 ```bash
-pip install -e git+https://github.com/Mottl/longtail#egg=longtail
+pip install -e git+https://github.com/Mottl/longtail.git#egg=longtail
 ```
 
 ## Usage
