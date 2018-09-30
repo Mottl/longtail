@@ -5,6 +5,11 @@
 ![Python 3x](https://img.shields.io/badge/python-3.x-blue.svg)
 [![Build Status](https://travis-ci.org/Mottl/longtail.svg?branch=master)](https://travis-ci.org/Mottl/longtail)
 
+## Installation
+```bash
+pip install -e git+https://github.com/Mottl/longtail#egg=longtail
+```
+
 ## Usage
 ```python
 import numpy as np
