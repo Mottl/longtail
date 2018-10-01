@@ -30,9 +30,14 @@ def fit_distributions(X, distributions=None, verbose=False):
     """
 
     if distributions is None:
-        distributions = [
-            'norm', 'laplace', 'cauchy'
-        ]
+        if min(X) >= 0:
+            distributions = [
+                'halfnorm', 'halfcauchy'
+            ]
+        else:
+            distributions = [
+                'norm', 'laplace', 'cauchy'
+            ]
 
     params = {}
     for name in distributions:
